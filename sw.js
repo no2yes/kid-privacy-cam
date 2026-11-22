@@ -2,7 +2,7 @@
    - 화면·아이콘 같은 가벼운 파일: APP_CACHE (수정본을 올릴 때마다 아래 버전을 올려 주세요)
    - AI 모델·실행 파일(약 25MB): ASSET_CACHE (버전을 올려도 지우지 않음 → 다시 받지 않음)
    AI 모델 파일(models/, ort/)을 새것으로 바꿀 때만 ASSET_CACHE 이름의 숫자를 올리세요. */
-const APP_CACHE = 'kidcam-app-v7';
+const APP_CACHE = 'kidcam-app-v8';
 const ASSET_CACHE = 'kidcam-assets-1';
 
 const APP_FILES = ['./', 'index.html', 'manifest.json', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
