@@ -37,8 +37,19 @@
   #view{display:block;width:100%;height:auto;background:#000;touch-action:manipulation}
   #info{margin:0;padding:12px 14px;font-size:14px;line-height:1.55;white-space:pre-line}
   #info.warn{color:var(--warn)}
-  details{margin-top:14px}
-  details.card{padding:0}
+  .gear{position:fixed;right:14px;bottom:calc(100px + env(safe-area-inset-bottom));width:52px;height:52px;
+    border-radius:50%;border:1px solid var(--line);background:#fff;font-size:24px;line-height:1;
+    box-shadow:0 4px 14px rgba(15,23,42,.22);z-index:15;display:flex;align-items:center;justify-content:center}
+  .gear:active{background:#eef3fb}
+  .modal{position:fixed;inset:0;z-index:25;background:rgba(15,23,42,.28);display:flex;align-items:flex-end}
+  .modal[hidden]{display:none}
+  .sheet{width:100%;max-height:64vh;overflow:auto;background:#fff;border-radius:20px 20px 0 0;
+    box-shadow:0 -6px 24px rgba(15,23,42,.25);padding-bottom:calc(18px + env(safe-area-inset-bottom))}
+  .sheet-head{position:sticky;top:0;background:#fff;display:flex;align-items:center;justify-content:space-between;
+    padding:14px 16px 10px;border-bottom:1px solid var(--line);font-size:16px}
+  .sheet-head button{border:0;background:var(--main);color:#fff;font-size:15px;font-weight:600;
+    padding:8px 18px;border-radius:10px}
+  .sheet .body{padding:2px 16px 8px}
   summary{cursor:pointer;font-size:15px;font-weight:600;padding:12px 16px;list-style:none}
   summary::-webkit-details-marker{display:none}
   details .body{padding:2px 16px 16px}
@@ -79,7 +90,7 @@
 </head>
 <body>
 <header>
-  <h1>원아 사진 촬영 <small style="font-size:11px;color:var(--sub);font-weight:500">v2</small></h1>
+  <h1>원아 사진 촬영 <small style="font-size:11px;color:var(--sub);font-weight:500">v3</small></h1>
   <span id="status">AI 준비 중…</span>
 </header>
 
@@ -100,9 +111,13 @@
     <p id="info"></p>
   </section>
 
-  <details class="card" id="settings">
-    <summary>⚙️ 가림 설정</summary>
-    <div class="body">
+</main>
+
+<button id="gear" class="gear" type="button" aria-label="가림 설정">⚙️</button>
+<div id="modal" class="modal" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-label="가림 설정">
+    <div class="sheet-head"><b>⚙️ 가림 설정</b><button id="modalClose" type="button">완료</button></div>
+    <div class="body" id="settings">
       <div class="row">
         <label>가리는 방식</label>
         <div class="seg">
@@ -121,8 +136,8 @@
         <div class="hint">아이 몸 바깥으로 얼마나 여유 있게 선명하게 남길지 정합니다. 클수록 주변이 더 보입니다. 옆에 다른 아이가 있으면 그쪽은 자동으로 반반 나눠 가립니다.</div>
       </div>
     </div>
-  </details>
-</main>
+  </div>
+</div>
 
 <div class="bar">
   <label class="btn" for="pick"><span class="ic">🖼️</span>사진첩</label>
@@ -157,7 +172,7 @@ const $ = id => document.getElementById(id);
 const MAX_EDGE  = 2048;   // 저장 사진의 긴 변 최대 픽셀
 const WORK_EDGE = 768;    // 마스크 계산용 해상도(긴 변)
 const REFINE_EDGE = 1280; // 가장자리 다듬기 해상도(긴 변)
-const APP_VER = 'v2';
+const APP_VER = 'v3';
 const CONF = 0.30, IOU = 0.5, MAX_PERSONS = 12;
 const CELLS      = [64, 48, 36, 28, 20];   // 모자이크: 긴 변 칸 수 (강도 1~5)
 const BLUR_EDGE  = [110, 84, 64, 48, 34];  // 블러: 축소 해상도 (강도 1~5)
@@ -678,6 +693,9 @@ document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click'
 $('lv').addEventListener('input', e => { S.level = +e.target.value; reapply(); });
 $('gr').addEventListener('input', e => { S.grow = +e.target.value; reapply(); });
 syncSettings();
+$('gear').addEventListener('click', () => { $('modal').hidden = false; });
+$('modalClose').addEventListener('click', () => { $('modal').hidden = true; });
+$('modal').addEventListener('click', e => { if (e.target === $('modal')) $('modal').hidden = true; });
 
 /* ---------- 시작 ---------- */
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
