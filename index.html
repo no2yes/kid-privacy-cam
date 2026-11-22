@@ -37,10 +37,33 @@
   #view{display:block;width:100%;height:auto;background:#000;touch-action:manipulation}
   #info{margin:0;padding:12px 14px;font-size:14px;line-height:1.55;white-space:pre-line}
   #info.warn{color:var(--warn)}
-  .gear{position:fixed;right:14px;bottom:calc(100px + env(safe-area-inset-bottom));width:52px;height:52px;
-    border-radius:50%;border:1px solid var(--line);background:#fff;font-size:24px;line-height:1;
-    box-shadow:0 4px 14px rgba(15,23,42,.22);z-index:15;display:flex;align-items:center;justify-content:center}
+  .fabs{position:fixed;right:14px;bottom:calc(100px + env(safe-area-inset-bottom));display:flex;
+    flex-direction:column;gap:10px;z-index:15}
+  body.manual .fabs{bottom:calc(214px + env(safe-area-inset-bottom))}
+  body.manual{padding-bottom:calc(230px + env(safe-area-inset-bottom))}
+  .gear{width:52px;height:52px;border-radius:50%;border:1px solid var(--line);background:#fff;font-size:24px;
+    line-height:1;box-shadow:0 4px 14px rgba(15,23,42,.22);display:flex;align-items:center;justify-content:center}
   .gear:active{background:#eef3fb}
+  .gear.on{background:var(--main);border-color:var(--main)}
+  .gear:disabled{opacity:.4}
+  .tools{position:fixed;left:12px;right:12px;bottom:calc(96px + env(safe-area-inset-bottom));z-index:14;
+    background:rgba(255,255,255,.97);border:1px solid var(--line);border-radius:14px;padding:10px 12px;
+    display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center;
+    box-shadow:0 4px 14px rgba(15,23,42,.18)}
+  .tools[hidden]{display:none}
+  .tools label{font-size:14px;font-weight:600}
+  .tbtns{grid-column:1 / -1;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .tbtns button{padding:11px 0;font-size:15px;font-weight:600;border:1px solid var(--line);border-radius:10px;
+    background:#fff;color:var(--ink)}
+  .tbtns button:active{background:#eef3fb}
+  #view{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+  .row.sep{margin-top:20px;padding-top:6px;border-top:1px solid var(--line)}
+  .row .t{color:var(--ink)}
+  .chk{width:26px;height:26px}
+  .inp{width:100%;padding:11px 12px;font-size:16px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+  .segx{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .segx button{padding:11px 0;font-size:15px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+  .segx button.on{background:var(--main);border-color:var(--main);color:#fff;font-weight:600}
   .modal{position:fixed;inset:0;z-index:25;background:rgba(15,23,42,.28);display:flex;align-items:flex-end}
   .modal[hidden]{display:none}
   .sheet{width:100%;max-height:64vh;overflow:auto;background:#fff;border-radius:20px 20px 0 0;
@@ -90,7 +113,7 @@
 </head>
 <body>
 <header>
-  <h1>원아 사진 촬영 <small style="font-size:11px;color:var(--sub);font-weight:500">v5</small></h1>
+  <h1>원아 사진 촬영 <small style="font-size:11px;color:var(--sub);font-weight:500">v6</small></h1>
   <span id="status">AI 준비 중…</span>
 </header>
 
@@ -113,7 +136,18 @@
 
 </main>
 
-<button id="gear" class="gear" type="button" aria-label="가림 설정">⚙️</button>
+<div class="fabs">
+  <button id="brushBtn" class="gear" type="button" aria-label="직접 가리기" disabled>🖌️</button>
+  <button id="gear" class="gear" type="button" aria-label="가림 설정">⚙️</button>
+</div>
+<div id="tools" class="tools" hidden>
+  <label for="brush">붓 크기</label>
+  <input type="range" id="brush" min="1" max="10" step="1">
+  <div class="tbtns">
+    <button id="undoBtn" type="button">↩ 되돌리기</button>
+    <button id="clrBtn" type="button">🗑 전체 지우기</button>
+  </div>
+</div>
 <div id="modal" class="modal" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-label="가림 설정">
     <div class="sheet-head"><b>⚙️ 가림 설정</b><button id="modalClose" type="button">완료</button></div>
@@ -134,6 +168,34 @@
         <label>남길 아이 윤곽 여유 <b id="grv"></b></label>
         <input type="range" id="gr" min="0" max="10" step="0.5">
         <div class="hint">아이 몸 바깥으로 얼마나 여유 있게 선명하게 남길지 정합니다. 클수록 주변이 더 보입니다. 옆에 다른 아이가 있으면 그쪽은 자동으로 반반 나눠 가립니다.</div>
+      </div>
+      <div class="row sep">
+        <label><b class="t">📅 날짜 표시</b><input type="checkbox" id="dOn" class="chk"></label>
+        <div class="hint">사진 구석에 날짜 글자를 넣습니다. 촬영할 때마다 오늘 날짜로 들어가고, 아래에서 고치면 그 날짜로 유지됩니다.</div>
+      </div>
+      <div class="row">
+        <label>날짜 (눌러서 바꾸기)</label>
+        <input type="date" id="dVal" class="inp">
+      </div>
+      <div class="row">
+        <label>위치</label>
+        <div class="segx" id="dPos">
+          <button type="button" data-pos="tl">↖ 왼쪽 위</button>
+          <button type="button" data-pos="tr">↗ 오른쪽 위</button>
+          <button type="button" data-pos="bl">↙ 왼쪽 아래</button>
+          <button type="button" data-pos="br">↘ 오른쪽 아래</button>
+        </div>
+      </div>
+      <div class="row">
+        <label>글자 크기 <b id="dsv"></b></label>
+        <input type="range" id="ds" min="1" max="5" step="1">
+      </div>
+      <div class="row">
+        <label>글자 색</label>
+        <div class="segx" id="dCol">
+          <button type="button" data-col="white">흰색</button>
+          <button type="button" data-col="yellow">노란색</button>
+        </div>
       </div>
     </div>
   </div>
@@ -172,18 +234,19 @@ const $ = id => document.getElementById(id);
 const MAX_EDGE  = 2048;   // 저장 사진의 긴 변 최대 픽셀
 const WORK_EDGE = 768;    // 마스크 계산용 해상도(긴 변)
 const REFINE_EDGE = 1280; // 가장자리 다듬기 해상도(긴 변)
-const APP_VER = 'v5';
+const APP_VER = 'v6';
 const CONF = 0.30, IOU = 0.5, MAX_PERSONS = 12;
 const CELLS      = [64, 48, 36, 28, 20];   // 모자이크: 긴 변 칸 수 (강도 1~5)
 const BLUR_EDGE  = [110, 84, 64, 48, 34];  // 블러: 축소 해상도 (강도 1~5)
 
 /* ---------- 설정 ---------- */
-const S = { mode: 'mosaic', level: 2, grow: 7 };
+const S = { mode: 'mosaic', level: 2, grow: 7, brush: 4, dateOn: true, datePos: 'br', dateSize: 3, dateColor: 'white' };
+const DATE_SIZES = [0.016, 0.021, 0.027, 0.034, 0.043];   // 날짜 글자 크기(긴 변 대비)
 try { Object.assign(S, JSON.parse(localStorage.getItem('kidcam-settings2') || '{}')); } catch (e) {}
-function saveSettings() { try { localStorage.setItem('kidcam-settings2', JSON.stringify(S)); } catch (e) {} }
+function saveSettings() { try { const o = Object.assign({}, S); delete o.dateVal; localStorage.setItem('kidcam-settings2', JSON.stringify(o)); } catch (e) {} }
 
 /* ---------- 상태 ---------- */
-const ST = { src: null, base: null, persons: [], wm: 0, hm: 0, target: -1, blobP: null };
+const ST = { src: null, base: null, mbase: null, comp: null, paint: null, strokes: [], manual: false, persons: [], wm: 0, hm: 0, target: -1, blobP: null };
 
 /* ---------- 유틸 ---------- */
 const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
@@ -447,15 +510,16 @@ async function refinePerson(p) {
 }
 
 /* ---------- 가림 이미지 / 마스크 ---------- */
-function buildBase(src) {
-  if (S.level === 0) return src;                  // 가림 없음
+function buildBase(src, level) {
+  if (level === undefined) level = S.level;
+  if (level === 0) return src;                    // 가림 없음
   const W = src.width, H = src.height, base = mk(W, H), g = base.getContext('2d');
   if (S.mode === 'mosaic') {
-    const k = CELLS[S.level - 1] / Math.max(W, H);
+    const k = CELLS[level - 1] / Math.max(W, H);
     const small = downscale(src, Math.max(2, Math.round(W * k)), Math.max(2, Math.round(H * k)));
     g.imageSmoothingEnabled = false; g.drawImage(small, 0, 0, W, H);
   } else {
-    const k = BLUR_EDGE[S.level - 1] / Math.max(W, H);
+    const k = BLUR_EDGE[level - 1] / Math.max(W, H);
     const small = downscale(src, Math.max(4, Math.round(W * k)), Math.max(4, Math.round(H * k)));
     blurCanvas(small, 2, 2);
     upscaleTo(small, g, W, H);
@@ -546,38 +610,164 @@ function makeMaskCanvas(ti) {
 }
 
 /* ---------- 합성 & 표시 ---------- */
+const todayStr = () => { const d = new Date(), p = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
+let dateEdited = false;               // 사용자가 날짜를 직접 고쳤는지 (아니면 촬영 때마다 오늘 날짜)
+S.dateVal = todayStr();
+
+/* 날짜 글자 찍기 (사진 구석) */
+function drawDate(g, W, H) {
+  if (!S.dateOn || !S.dateVal) return;
+  const txt = S.dateVal.replace(/-/g, '.');
+  const size = Math.round(Math.max(W, H) * DATE_SIZES[S.dateSize - 1]);
+  g.save();
+  g.font = `700 ${size}px -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif`;
+  g.textBaseline = 'alphabetic'; g.lineJoin = 'round';
+  const m = Math.round(size * 0.8), tw = g.measureText(txt).width;
+  const x = S.datePos.endsWith('r') ? W - m - tw : m;
+  const y = S.datePos.startsWith('b') ? H - m : m + size * 0.8;
+  g.lineWidth = Math.max(2, size * 0.16); g.strokeStyle = 'rgba(0,0,0,.65)'; g.strokeText(txt, x, y);
+  g.fillStyle = S.dateColor === 'yellow' ? '#ffd60a' : '#ffffff'; g.fillText(txt, x, y);
+  g.restore();
+}
+function makeBlob() { ST.blobP = new Promise(res => $('view').toBlob(res, 'image/jpeg', 0.92)); }
+function updateInfo() {
+  const info = $('info'), n = ST.persons.length; info.className = '';
+  let t;
+  if (ST.manual) {
+    t = n ? '🖌️ 직접 가리기: 가릴 곳을 손가락으로 문지르세요. 문지른 곳만 가려지고 자동 가림은 꺼져 있어요.'
+          : '사람을 찾지 못했어요. 가릴 곳을 손가락으로 문지르세요.';
+    if (S.level === 0) t += '\n(가림 강도가 0이라 4단계로 가려요)';
+  } else {
+    t = n > 1 ? `👥 ${n}명 감지 · 남길 아이를 화면에서 탭하면 바뀝니다. 확인 후 저장하세요.`
+              : '👤 1명 감지 · 이 아이만 남기고 주변은 가렸어요. 확인 후 저장하세요.';
+    if (S.level === 0) t += '\n⚠ 가림 강도가 0이라 주변을 가리지 않았습니다.';
+  }
+  info.textContent = t;
+}
+/* comp(날짜 빼고 합성한 그림) → 화면 */
+function presentView() {
+  const view = $('view'), W = ST.comp.width, H = ST.comp.height;
+  if (view.width !== W || view.height !== H) { view.width = W; view.height = H; }
+  const vg = view.getContext('2d');
+  vg.globalCompositeOperation = 'source-over';
+  vg.drawImage(ST.comp, 0, 0);
+  drawDate(vg, W, H);
+  makeBlob(); $('saveBtn').disabled = false; updateInfo();
+}
+/* 자동 가림 합성 */
 function render() {
-  const { src, base } = ST, W = src.width, H = src.height, view = $('view');
+  const { src, base } = ST, W = src.width, H = src.height;
   const mc = makeMaskCanvas(ST.target);
   const tmp = mk(W, H), tg = tmp.getContext('2d');
   tg.drawImage(src, 0, 0);
   tg.globalCompositeOperation = 'destination-in';
   tg.imageSmoothingEnabled = true; tg.imageSmoothingQuality = 'high';
   tg.drawImage(mc, 0, 0, W, H);
-  if (view.width !== W || view.height !== H) { view.width = W; view.height = H; }
-  const vg = view.getContext('2d');
+  const cg = ST.comp.getContext('2d');
+  cg.globalCompositeOperation = 'source-over';
+  cg.clearRect(0, 0, W, H); cg.drawImage(base, 0, 0); cg.drawImage(tmp, 0, 0);
+  presentView();
+}
+
+/* ---------- 직접 가리기 (원본에서 손가락으로 문지른 곳만 가림) ---------- */
+const _tmpC = document.createElement('canvas');
+function compManual(x, y, w, h) {
+  const g = ST.comp.getContext('2d');
+  g.globalCompositeOperation = 'source-over';
+  g.drawImage(ST.src, x, y, w, h, x, y, w, h);
+  _tmpC.width = w; _tmpC.height = h;
+  const tg = _tmpC.getContext('2d');
+  tg.drawImage(ST.mbase, x, y, w, h, 0, 0, w, h);
+  tg.globalCompositeOperation = 'destination-in';
+  tg.drawImage(ST.paint, x, y, w, h, 0, 0, w, h);
+  g.drawImage(_tmpC, 0, 0, w, h, x, y, w, h);
+}
+function viewRegion(x, y, w, h) {
+  const view = $('view'), vg = view.getContext('2d');
+  vg.save(); vg.beginPath(); vg.rect(x, y, w, h); vg.clip();
   vg.globalCompositeOperation = 'source-over';
-  vg.drawImage(base, 0, 0);
-  vg.drawImage(tmp, 0, 0);
-  ST.blobP = new Promise(res => view.toBlob(res, 'image/jpeg', 0.92));
-  $('saveBtn').disabled = false;
-  const n = ST.persons.length;
-  const info = $('info'); info.className = '';
-  let t = n > 1
-    ? `👥 ${n}명 감지 · 남길 아이를 화면에서 탭하면 바뀝니다. 확인 후 저장하세요.`
-    : '👤 1명 감지 · 이 아이만 남기고 주변은 가렸어요. 확인 후 저장하세요.';
-  if (S.level === 0) t += '\n⚠ 가림 강도가 0이라 주변을 가리지 않았습니다.';
-  info.textContent = t;
+  vg.drawImage(ST.comp, x, y, w, h, x, y, w, h);
+  drawDate(vg, view.width, view.height);
+  vg.restore();
 }
-function showNoPerson() {
-  ST.persons = []; ST.src = ST.base = null; ST.blobP = null;
-  $('resultBox').hidden = false;
-  const v = $('view'); v.width = 4; v.height = 3; v.getContext('2d').clearRect(0, 0, 4, 3);
-  v.style.display = 'none';
-  const info = $('info'); info.className = 'warn';
-  info.textContent = '사람을 찾지 못했어요. 아이가 더 크고 또렷하게 보이도록 다시 촬영해 주세요. (가려지지 않은 사진은 저장되지 않습니다)';
-  $('saveBtn').disabled = true;
+function strokeDraw(g, st, from) {
+  g.fillStyle = g.strokeStyle = '#000'; g.lineCap = g.lineJoin = 'round'; g.lineWidth = st.r * 2;
+  const p = st.pts;
+  if (p.length === 1) { g.beginPath(); g.arc(p[0][0], p[0][1], st.r, 0, Math.PI * 2); g.fill(); return; }
+  g.beginPath(); g.moveTo(p[from][0], p[from][1]);
+  for (let i = from + 1; i < p.length; i++) g.lineTo(p[i][0], p[i][1]);
+  g.stroke();
 }
+function redrawPaint() {
+  const g = ST.paint.getContext('2d');
+  g.clearRect(0, 0, ST.paint.width, ST.paint.height);
+  ST.strokes.forEach(st => strokeDraw(g, st, 0));
+}
+function renderManual() {
+  if (!ST.mbase) ST.mbase = buildBase(ST.src, S.level || 4);
+  redrawPaint();
+  compManual(0, 0, ST.src.width, ST.src.height);
+  presentView();
+}
+function paintStep(st, from) {
+  strokeDraw(ST.paint.getContext('2d'), st, from);
+  const W = ST.src.width, H = ST.src.height, p = st.pts, pad = st.r + 3;
+  let x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
+  for (let i = Math.max(0, from); i < p.length; i++) {
+    x0 = Math.min(x0, p[i][0]); x1 = Math.max(x1, p[i][0]); y0 = Math.min(y0, p[i][1]); y1 = Math.max(y1, p[i][1]);
+  }
+  const x = Math.max(0, Math.floor(x0 - pad)), y = Math.max(0, Math.floor(y0 - pad));
+  const w = Math.min(W, Math.ceil(x1 + pad)) - x, h = Math.min(H, Math.ceil(y1 + pad)) - y;
+  if (w < 1 || h < 1) return;
+  compManual(x, y, w, h); viewRegion(x, y, w, h);
+}
+function refreshView() {
+  if (!ST.src) return;
+  if (ST.manual || !ST.persons.length) renderManual();
+  else { if (!ST.base) ST.base = buildBase(ST.src); render(); }
+}
+function setManualUI(on) {
+  ST.manual = on;
+  document.body.classList.toggle('manual', on);
+  $('tools').hidden = !on;
+  $('brushBtn').classList.toggle('on', on);
+  $('view').style.touchAction = on ? 'none' : 'manipulation';
+}
+function setManual(on) {
+  if (!ST.src) return;
+  if (!on && !ST.persons.length) { toast('이 사진은 자동 가림을 쓸 수 없어요. 직접 가려 주세요'); return; }
+  setManualUI(on);
+  refreshView();
+}
+$('brushBtn').addEventListener('click', () => setManual(!ST.manual));
+const brushR = () => Math.max(ST.src.width, ST.src.height) * (0.006 + S.brush * 0.0065);
+let curStroke = null;
+function viewPt(ev) {
+  const view = $('view'), r = view.getBoundingClientRect();
+  return [(ev.clientX - r.left) / r.width * view.width, (ev.clientY - r.top) / r.height * view.height];
+}
+$('view').addEventListener('pointerdown', ev => {
+  if (!ST.manual || !ST.src || working) return;
+  ev.preventDefault();
+  try { $('view').setPointerCapture(ev.pointerId); } catch (e) {}
+  curStroke = { r: brushR(), pts: [viewPt(ev)] };
+  ST.strokes.push(curStroke);
+  paintStep(curStroke, 0);
+});
+$('view').addEventListener('pointermove', ev => {
+  if (!curStroke) return;
+  ev.preventDefault();
+  const p = viewPt(ev), l = curStroke.pts[curStroke.pts.length - 1];
+  if (Math.hypot(p[0] - l[0], p[1] - l[1]) < curStroke.r * 0.2) return;
+  curStroke.pts.push(p);
+  paintStep(curStroke, curStroke.pts.length - 2);
+});
+const endStroke = () => { if (curStroke) { curStroke = null; makeBlob(); } };
+$('view').addEventListener('pointerup', endStroke);
+$('view').addEventListener('pointercancel', endStroke);
+$('undoBtn').addEventListener('click', () => { if (ST.strokes.length) { ST.strokes.pop(); renderManual(); } });
+$('clrBtn').addEventListener('click', () => { if (ST.strokes.length) { ST.strokes = []; renderManual(); } });
+$('brush').addEventListener('input', e => { S.brush = +e.target.value; saveSettings(); });
 
 /* ---------- 촬영/선택 처리 ---------- */
 let working = false;
@@ -586,26 +776,34 @@ async function handleFile(file) {
   working = true;
   try {
     // 이전 사진(원본 포함)을 먼저 지움
-    ST.src = ST.base = null; ST.persons = []; ST.blobP = null; $('saveBtn').disabled = true;
+    ST.src = ST.base = ST.mbase = ST.comp = ST.paint = null; ST.persons = []; ST.blobP = null; ST.strokes = []; curStroke = null;
+    setManualUI(false);
+    $('saveBtn').disabled = true; $('brushBtn').disabled = true;
     $('empty').hidden = true; $('view').style.display = '';
+    if (!dateEdited) { S.dateVal = todayStr(); syncSettings(); }
     busy('사진을 불러오는 중…'); await tick();
     const bmp = await loadBitmap(file);
     const [bw, bh] = srcSize(bmp), sc = Math.min(1, MAX_EDGE / Math.max(bw, bh));
     ST.src = downscale(bmp, Math.max(2, Math.round(bw * sc)), Math.max(2, Math.round(bh * sc)));
     if (bmp.close) bmp.close();
+    ST.comp = mk(ST.src.width, ST.src.height); ST.paint = mk(ST.src.width, ST.src.height);
+    $('brushBtn').disabled = false;
 
     busy(sessionP ? '아이를 찾는 중…' : '아이를 찾는 중…\n(처음 한 번은 AI를 불러오느라 조금 더 걸려요)'); await tick();
     const r = await detectPersons(ST.src);
     ST.persons = r.persons; ST.wm = r.wm; ST.hm = r.hm;
     settlePersons();
-    if (!ST.persons.length) { busy(); showNoPerson(); return; }
+    $('resultBox').hidden = false;
+    if (!ST.persons.length) {            // 사람을 못 찾으면 직접 가리기로 열기 (가리지 않은 채 저장되지 않도록 저장 때 한 번 더 확인)
+      busy(); setManual(true); toast('사람을 찾지 못해 직접 가리기로 열었어요');
+      return;
+    }
     ST.target = pickTarget(ST.persons);
 
     busy('선택한 아이를 정밀하게 다듬는 중…'); await tick();
     await refinePerson(ST.persons[ST.target]);
     busy('나머지를 가리는 중…'); await tick();
     ST.base = buildBase(ST.src);
-    $('resultBox').hidden = false;
     render();
     setStatus('✓ AI 준비 완료', 'ok');
   } catch (e) {
@@ -622,7 +820,7 @@ $('pick').addEventListener('change', e => { const f = e.target.files[0]; e.targe
 
 /* ---------- 화면 탭 → 대상 아이 바꾸기 ---------- */
 $('view').addEventListener('click', async ev => {
-  if (!ST.persons.length || working) return;
+  if (ST.manual || !ST.persons.length || working) return;
   const r = $('view').getBoundingClientRect(), { wm, hm, persons } = ST;
   const x = Math.floor((ev.clientX - r.left) / r.width * wm), y = Math.floor((ev.clientY - r.top) / r.height * hm);
   let best = -1, ba = Infinity;
@@ -666,6 +864,7 @@ function showFallback(blob) {
 $('fbClose').addEventListener('click', () => { $('fallback').hidden = true; });
 $('saveBtn').addEventListener('click', async () => {
   if (!ST.blobP) return;
+  if (ST.manual && !ST.strokes.length && !confirm('아직 가린 곳이 없어요.\n가리지 않고 저장할까요?')) return;
   const blob = await ST.blobP;
   if (!blob) { toast('저장 파일을 만들지 못했어요'); return; }
   const file = new File([blob], `원아사진_${stamp()}.jpg`, { type: 'image/jpeg' });
@@ -681,17 +880,31 @@ function syncSettings() {
   document.querySelectorAll('.seg button').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode));
   $('lv').value = S.level; $('lvv').textContent = S.level === 0 ? '0 (가리지 않음)' : S.level;
   $('gr').value = S.grow;  $('grv').textContent = S.grow.toFixed(1) + '%';
+  $('brush').value = S.brush;
+  $('dOn').checked = S.dateOn; $('dVal').value = S.dateVal || '';
+  $('ds').value = S.dateSize; $('dsv').textContent = S.dateSize;
+  document.querySelectorAll('#dPos button').forEach(b => b.classList.toggle('on', b.dataset.pos === S.datePos));
+  document.querySelectorAll('#dCol button').forEach(b => b.classList.toggle('on', b.dataset.col === S.dateColor));
 }
 let reTimer = 0;
 function reapply() {
   saveSettings(); syncSettings();
-  if (!ST.src || !ST.persons.length) return;
+  if (!ST.src) return;
   clearTimeout(reTimer);
-  reTimer = setTimeout(() => { ST.base = buildBase(ST.src); render(); }, 250);
+  reTimer = setTimeout(() => { ST.base = null; ST.mbase = null; refreshView(); }, 250);
+}
+function redate() {          // 날짜 옵션 변경 → 가림은 그대로, 글자만 다시 찍기
+  saveSettings(); syncSettings();
+  if (ST.src && ST.comp) presentView();
 }
 document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => { S.mode = b.dataset.mode; reapply(); }));
 $('lv').addEventListener('input', e => { S.level = +e.target.value; reapply(); });
 $('gr').addEventListener('input', e => { S.grow = +e.target.value; reapply(); });
+$('dOn').addEventListener('change', e => { S.dateOn = e.target.checked; redate(); });
+$('dVal').addEventListener('change', e => { S.dateVal = e.target.value; dateEdited = !!e.target.value; if (!e.target.value) { S.dateVal = todayStr(); dateEdited = false; } redate(); });
+$('ds').addEventListener('input', e => { S.dateSize = +e.target.value; redate(); });
+document.querySelectorAll('#dPos button').forEach(b => b.addEventListener('click', () => { S.datePos = b.dataset.pos; redate(); }));
+document.querySelectorAll('#dCol button').forEach(b => b.addEventListener('click', () => { S.dateColor = b.dataset.col; redate(); }));
 syncSettings();
 $('gear').addEventListener('click', () => { $('modal').hidden = false; });
 $('modalClose').addEventListener('click', () => { $('modal').hidden = true; });
