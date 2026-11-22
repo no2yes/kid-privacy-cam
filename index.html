@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="원아촬영">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#1f6feb">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>원아 사진 촬영</title>
+<style>
+  :root{
+    --bg:#f4f6fa; --card:#fff; --ink:#1b2430; --sub:#6b7686; --line:#dde3ec;
+    --main:#1f6feb; --main-d:#1859bf; --ok:#1a8f4c; --warn:#c2410c;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+    -webkit-text-size-adjust:100%}
+  body{min-height:100vh;min-height:100dvh;padding-bottom:calc(112px + env(safe-area-inset-bottom))}
+  header{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:calc(12px + env(safe-area-inset-top)) 16px 10px}
+  header h1{font-size:19px;margin:0;font-weight:700;letter-spacing:-.3px}
+  #status{font-size:12px;color:var(--sub);background:var(--card);border:1px solid var(--line);
+    border-radius:99px;padding:4px 10px;white-space:nowrap}
+  #status.ok{color:var(--ok);border-color:#b8e3c9}
+  #status.bad{color:var(--warn);border-color:#f3c7ad}
+  main{padding:0 16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+  #empty h2{margin:0 0 8px;font-size:17px}
+  #empty ol{margin:0;padding-left:20px;line-height:1.75;color:var(--ink);font-size:15px}
+  #empty p{margin:12px 0 0;font-size:13px;color:var(--sub);line-height:1.6}
+  #resultBox{padding:0;overflow:hidden}
+  #view{display:block;width:100%;height:auto;background:#000;touch-action:manipulation}
+  #info{margin:0;padding:12px 14px;font-size:14px;line-height:1.55}
+  #info.warn{color:var(--warn)}
+  details{margin-top:14px}
+  details.card{padding:0}
+  summary{cursor:pointer;font-size:15px;font-weight:600;padding:12px 16px;list-style:none}
+  summary::-webkit-details-marker{display:none}
+  details .body{padding:2px 16px 16px}
+  .row{margin-top:14px}
+  .row label{display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px}
+  .row label b{color:var(--main)}
+  .seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .seg button{padding:11px 0;font-size:15px;border:1px solid var(--line);border-radius:10px;
+    background:#fff;color:var(--ink)}
+  .seg button.on{background:var(--main);border-color:var(--main);color:#fff;font-weight:600}
+  input[type=range]{width:100%}
+  .hint{font-size:12px;color:var(--sub);margin-top:6px;line-height:1.5}
+  .bar{position:fixed;left:0;right:0;bottom:0;display:grid;grid-template-columns:1fr 2.2fr 1fr;gap:10px;
+    padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:rgba(255,255,255,.96);
+    border-top:1px solid var(--line);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+  .btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:14px;
+    font-size:13px;font-weight:600;min-height:64px;text-align:center;user-select:none}
+  .btn .ic{font-size:22px;line-height:1}
+  .btn.main{background:var(--main);border-color:var(--main);color:#fff;font-size:16px}
+  .btn.main:active{background:var(--main-d)}
+  .btn:disabled{opacity:.4}
+  .vh{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none}
+  .overlay{position:fixed;inset:0;background:rgba(15,23,42,.72);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:14px;z-index:20;padding:24px;text-align:center;color:#fff}
+  .overlay[hidden]{display:none}
+  .spin{width:44px;height:44px;border-radius:50%;border:4px solid rgba(255,255,255,.3);
+    border-top-color:#fff;animation:sp 0.9s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  #busyText{margin:0;font-size:15px;line-height:1.6;max-width:320px;white-space:pre-line}
+  #toast{position:fixed;left:50%;bottom:calc(120px + env(safe-area-inset-bottom));transform:translateX(-50%);
+    background:rgba(20,28,40,.92);color:#fff;padding:10px 16px;border-radius:99px;font-size:14px;
+    z-index:30;opacity:0;pointer-events:none;transition:opacity .2s;max-width:88vw;text-align:center}
+  #toast.show{opacity:1}
+  #fallback img{max-width:100%;max-height:70vh;border-radius:10px;background:#000}
+  #fallback .close{padding:12px 28px;border-radius:12px;border:0;font-size:16px;background:#fff;color:#111}
+</style>
+</head>
+<body>
+<header>
+  <h1>원아 사진 촬영</h1>
+  <span id="status">AI 준비 중…</span>
+</header>
+
+<main>
+  <section id="empty" class="card">
+    <h2>이렇게 쓰세요</h2>
+    <ol>
+      <li>아래 <b>촬영하기</b>를 눌러 사진을 찍습니다.</li>
+      <li>가운데 아이만 남고 나머지는 자동으로 가려집니다.</li>
+      <li>단체 사진이면 남기고 싶은 아이를 화면에서 탭하세요.</li>
+      <li><b>저장</b> → 공유창에서 <b>이미지 저장</b>을 누르면 끝!</li>
+    </ol>
+    <p>사진은 이 폰 안에서만 처리되고 어디로도 전송되지 않습니다. 이 앱은 가리기 전 원본을 저장하지 않으며, 다음 촬영 때 메모리에서 지웁니다.</p>
+  </section>
+
+  <section id="resultBox" class="card" hidden>
+    <canvas id="view"></canvas>
+    <p id="info"></p>
+  </section>
+
+  <details class="card" id="settings">
+    <summary>⚙️ 가림 설정</summary>
+    <div class="body">
+      <div class="row">
+        <label>가리는 방식</label>
+        <div class="seg">
+          <button type="button" data-mode="mosaic">모자이크</button>
+          <button type="button" data-mode="blur">블러</button>
+        </div>
+      </div>
+      <div class="row">
+        <label>가림 강도 <b id="lvv"></b></label>
+        <input type="range" id="lv" min="1" max="5" step="1">
+        <div class="hint">높을수록 알아보기 어렵습니다. (기본 4)</div>
+      </div>
+      <div class="row">
+        <label>남길 아이 윤곽 여유 <b id="grv"></b></label>
+        <input type="range" id="gr" min="0" max="3" step="0.2">
+        <div class="hint">아이 몸 바깥으로 얼마나 여유 있게 선명하게 남길지 정합니다. 클수록 주변이 조금 더 보입니다.</div>
+      </div>
+    </div>
+  </details>
+</main>
+
+<div class="bar">
+  <label class="btn" for="pick"><span class="ic">🖼️</span>사진첩</label>
+  <label class="btn main" for="cam"><span class="ic">📷</span>촬영하기</label>
+  <button class="btn" id="saveBtn" type="button" disabled><span class="ic">💾</span>저장</button>
+</div>
+
+<input class="vh" type="file" id="cam" accept="image/*" capture="environment">
+<input class="vh" type="file" id="pick" accept="image/*">
+
+<div id="busy" class="overlay" hidden>
+  <div class="spin"></div>
+  <p id="busyText"></p>
+</div>
+<div id="fallback" class="overlay" hidden>
+  <img id="fbImg" alt="">
+  <p>사진을 <b>길게 눌러</b> “사진에 추가”를 선택하세요.</p>
+  <button class="close" id="fbClose" type="button">닫기</button>
+</div>
+<div id="toast"></div>
+
+<script src="ort/ort.min.js"></script>
+<script>
+'use strict';
+/* ====================================================================
+   원아 사진 촬영 — 대상 아이만 선명하게, 나머지는 모자이크/블러
+   · 모든 처리는 이 기기 안에서만 수행합니다 (서버 전송 없음)
+   · "사람을 찾아 가린다"가 아니라 "대상 아이만 남기고 전부 가린다"
+     → AI가 놓친 사람이 있어도 가려진 채로 남는 안전한 방식
+   ==================================================================== */
+const $ = id => document.getElementById(id);
+const MAX_EDGE  = 2048;   // 저장 사진의 긴 변 최대 픽셀
+const WORK_EDGE = 512;    // 마스크 계산용 해상도(긴 변)
+const CONF = 0.30, IOU = 0.5, MAX_PERSONS = 12;
+const CELLS      = [64, 48, 36, 28, 20];   // 모자이크: 긴 변 칸 수 (강도 1~5)
+const BLUR_EDGE  = [110, 84, 64, 48, 34];  // 블러: 축소 해상도 (강도 1~5)
+
+/* ---------- 설정 ---------- */
+const S = { mode: 'mosaic', level: 4, grow: 0.8 };
+try { Object.assign(S, JSON.parse(localStorage.getItem('kidcam-settings') || '{}')); } catch (e) {}
+function saveSettings() { try { localStorage.setItem('kidcam-settings', JSON.stringify(S)); } catch (e) {} }
+
+/* ---------- 상태 ---------- */
+const ST = { src: null, base: null, persons: [], wm: 0, hm: 0, target: -1, blobP: null };
+
+/* ---------- 유틸 ---------- */
+const mk = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+const tick = () => new Promise(r => setTimeout(r, 30));
+let toastTimer = 0;
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+function busy(msg) { if (msg) { $('busyText').textContent = msg; $('busy').hidden = false; } else { $('busy').hidden = true; } }
+function setStatus(txt, cls) { const s = $('status'); s.textContent = txt; s.className = cls || ''; }
+
+/* ---------- AI 모델 ---------- */
+let sessionP = null;
+function getSession() {
+  if (!sessionP) {
+    ort.env.logLevel = 'error';
+    ort.env.wasm.wasmPaths = new URL('ort/', location.href).href;
+    ort.env.wasm.numThreads = 1;
+    ort.env.wasm.proxy = false;
+    sessionP = ort.InferenceSession.create(new URL('models/yolov8n-seg.onnx', location.href).href,
+      { executionProviders: ['wasm'], graphOptimizationLevel: 'all' });
+    sessionP.catch(() => { sessionP = null; });
+  }
+  return sessionP;
+}
+function warmUp() {
+  getSession().then(() => setStatus('✓ AI 준비 완료', 'ok'))
+              .catch(() => setStatus('⚠ AI 불러오기 실패', 'bad'));
+}
+
+/* ---------- 이미지 불러오기 ---------- */
+async function loadBitmap(file) {
+  try { return await createImageBitmap(file, { imageOrientation: 'from-image' }); }
+  catch (e) {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = new Image(); img.src = url; await img.decode();
+      return img;
+    } finally { setTimeout(() => URL.revokeObjectURL(url), 5000); }
+  }
+}
+function srcSize(d) { return [d.naturalWidth || d.videoWidth || d.width, d.naturalHeight || d.videoHeight || d.height]; }
+
+function downscale(src, tw, th) {
+  let cur = src, [cw, ch] = srcSize(src);
+  while (cw / 2 >= tw && ch / 2 >= th) {
+    const nw = Math.ceil(cw / 2), nh = Math.ceil(ch / 2);
+    const c = mk(nw, nh), g = c.getContext('2d');
+    g.imageSmoothingQuality = 'high'; g.drawImage(cur, 0, 0, nw, nh);
+    cur = c; cw = nw; ch = nh;
+  }
+  const out = mk(tw, th), g = out.getContext('2d');
+  g.imageSmoothingQuality = 'high'; g.drawImage(cur, 0, 0, tw, th);
+  return out;
+}
+function upscaleTo(small, g, W, H) {
+  let cur = small;
+  while (cur.width * 2 < W && cur.height * 2 < H) {
+    const c = mk(cur.width * 2, cur.height * 2), gg = c.getContext('2d');
+    gg.imageSmoothingQuality = 'high'; gg.drawImage(cur, 0, 0, c.width, c.height);
+    cur = c;
+  }
+  g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+  g.drawImage(cur, 0, 0, W, H);
+}
+
+/* ---------- 박스 블러 (한 겹 평면) ---------- */
+function blurPlane(p, w, h, r, passes) {
+  if (r < 1) return;
+  const tmp = new Float32Array(p.length), k = 1 / (2 * r + 1);
+  for (let ps = 0; ps < passes; ps++) {
+    for (let y = 0; y < h; y++) {
+      const row = y * w; let sum = 0;
+      for (let i = -r; i <= r; i++) sum += p[row + clamp(i, 0, w - 1)];
+      for (let x = 0; x < w; x++) {
+        tmp[row + x] = sum * k;
+        sum += p[row + Math.min(w - 1, x + r + 1)] - p[row + Math.max(0, x - r)];
+      }
+    }
+    for (let x = 0; x < w; x++) {
+      let sum = 0;
+      for (let i = -r; i <= r; i++) sum += tmp[clamp(i, 0, h - 1) * w + x];
+      for (let y = 0; y < h; y++) {
+        p[y * w + x] = sum * k;
+        sum += tmp[Math.min(h - 1, y + r + 1) * w + x] - tmp[Math.max(0, y - r) * w + x];
+      }
+    }
+  }
+}
+function blurCanvas(c, r, passes) {
+  const g = c.getContext('2d'), id = g.getImageData(0, 0, c.width, c.height), n = c.width * c.height;
+  for (let ch = 0; ch < 3; ch++) {
+    const pl = new Float32Array(n);
+    for (let i = 0; i < n; i++) pl[i] = id.data[i * 4 + ch];
+    blurPlane(pl, c.width, c.height, r, passes);
+    for (let i = 0; i < n; i++) id.data[i * 4 + ch] = pl[i];
+  }
+  g.putImageData(id, 0, 0);
+}
+
+/* ---------- 사람 찾기 (YOLOv8n-seg) ---------- */
+async function detectPersons(src) {
+  const W = src.width, H = src.height;
+  const s = 640 / Math.max(W, H);
+  const nw = Math.round(W * s), nh = Math.round(H * s);
+  const c = mk(640, 640), g = c.getContext('2d', { willReadFrequently: true });
+  g.fillStyle = 'rgb(114,114,114)'; g.fillRect(0, 0, 640, 640);
+  g.imageSmoothingQuality = 'high';
+  g.drawImage(downscale(src, nw, nh), 0, 0);
+  const d = g.getImageData(0, 0, 640, 640).data, plane = 640 * 640;
+  const input = new Float32Array(3 * plane);
+  for (let i = 0, p = 0; i < plane; i++, p += 4) {
+    input[i] = d[p] / 255; input[plane + i] = d[p + 1] / 255; input[2 * plane + i] = d[p + 2] / 255;
+  }
+  const sess = await getSession();
+  const out = await sess.run({ [sess.inputNames[0]]: new ort.Tensor('float32', input, [1, 3, 640, 640]) });
+  let det = null, protos = null;
+  for (const k of sess.outputNames) { const t = out[k]; if (t.dims.length === 3) det = t; else if (t.dims.length === 4) protos = t; }
+  if (!det || !protos) throw new Error('모델 출력 형식을 알 수 없어요');
+
+  // --- 후보 추출 (class 0 = person) ---
+  const N = det.dims[2], nc = det.dims[1] - 4 - 32, dd = det.data, cands = [];
+  for (let i = 0; i < N; i++) {
+    const sc = dd[4 * N + i];
+    if (sc < CONF) continue;
+    const cx = dd[i], cy = dd[N + i], w = dd[2 * N + i], h = dd[3 * N + i];
+    cands.push({ sc, x1: cx - w / 2, y1: cy - h / 2, x2: cx + w / 2, y2: cy + h / 2, i });
+  }
+  cands.sort((a, b) => b.sc - a.sc);
+  const keep = [];
+  for (const a of cands) {
+    let ok = true;
+    for (const b of keep) {
+      const iw = Math.min(a.x2, b.x2) - Math.max(a.x1, b.x1), ih = Math.min(a.y2, b.y2) - Math.max(a.y1, b.y1);
+      if (iw <= 0 || ih <= 0) continue;
+      const inter = iw * ih, uni = (a.x2 - a.x1) * (a.y2 - a.y1) + (b.x2 - b.x1) * (b.y2 - b.y1) - inter;
+      if (inter / uni > IOU) { ok = false; break; }
+    }
+    if (ok) { keep.push(a); if (keep.length >= MAX_PERSONS) break; }
+  }
+
+  // --- 마스크 복원 ---
+  const ws = WORK_EDGE / Math.max(W, H);
+  const wm = Math.max(8, Math.round(W * ws)), hm = Math.max(8, Math.round(H * ws));
+  const PW = 160, PL = PW * PW, pd = protos.data;
+  const pu = nw / 4, pv = nh / 4;            // 프로토 공간에서 실제 이미지가 차지하는 크기
+  const xs0 = new Int32Array(wm), xs1 = new Int32Array(wm), xf = new Float32Array(wm);
+  for (let x = 0; x < wm; x++) {
+    const u = clamp((x + 0.5) * pu / wm - 0.5, 0, pu - 1);
+    xs0[x] = Math.floor(u); xs1[x] = Math.min(PW - 1, xs0[x] + 1); xf[x] = u - xs0[x];
+  }
+  const kx = wm / nw, ky = hm / nh, persons = [];
+  for (const a of keep) {
+    const logit = new Float32Array(PL);
+    for (let k = 0; k < 32; k++) {
+      const cf = dd[(4 + nc + k) * N + a.i], off = k * PL;
+      if (cf === 0) continue;
+      for (let j = 0; j < PL; j++) logit[j] += cf * pd[off + j];
+    }
+    const mx = 0.02 * wm, my = 0.02 * hm;
+    const bx1 = a.x1 * kx - mx, bx2 = a.x2 * kx + mx, by1 = a.y1 * ky - my, by2 = a.y2 * ky + my;
+    const mask = new Uint8Array(wm * hm);
+    let area = 0, sx = 0, sy = 0;
+    for (let y = 0; y < hm; y++) {
+      if (y < by1 || y > by2) continue;
+      const v = clamp((y + 0.5) * pv / hm - 0.5, 0, pv - 1), y0 = Math.floor(v), y1 = Math.min(PW - 1, y0 + 1), fy = v - y0;
+      for (let x = 0; x < wm; x++) {
+        if (x < bx1 || x > bx2) continue;
+        const l = (logit[y0 * PW + xs0[x]] * (1 - xf[x]) + logit[y0 * PW + xs1[x]] * xf[x]) * (1 - fy)
+                + (logit[y1 * PW + xs0[x]] * (1 - xf[x]) + logit[y1 * PW + xs1[x]] * xf[x]) * fy;
+        if (l > 0) { mask[y * wm + x] = 1; area++; sx += x; sy += y; }
+      }
+    }
+    if (area < 0.0015 * wm * hm) continue;      // 너무 작은 잡음 제외
+    persons.push({ mask, area, cx: sx / area / wm, cy: sy / area / hm,
+                   bx1: Math.max(0, bx1), by1: Math.max(0, by1), bx2: Math.min(wm, bx2), by2: Math.min(hm, by2) });
+  }
+  return { persons, wm, hm };
+}
+
+function pickTarget(persons) {   // 크고 가운데에 가까운 사람
+  let best = -1, bs = -1;
+  persons.forEach((p, i) => {
+    const d = Math.hypot(p.cx - 0.5, p.cy - 0.5);
+    const sc = p.area * (1.2 - 1.2 * d);
+    if (sc > bs) { bs = sc; best = i; }
+  });
+  return best;
+}
+
+/* ---------- 가림 이미지 / 마스크 ---------- */
+function buildBase(src) {
+  const W = src.width, H = src.height, base = mk(W, H), g = base.getContext('2d');
+  if (S.mode === 'mosaic') {
+    const k = CELLS[S.level - 1] / Math.max(W, H);
+    const small = downscale(src, Math.max(2, Math.round(W * k)), Math.max(2, Math.round(H * k)));
+    g.imageSmoothingEnabled = false; g.drawImage(small, 0, 0, W, H);
+  } else {
+    const k = BLUR_EDGE[S.level - 1] / Math.max(W, H);
+    const small = downscale(src, Math.max(4, Math.round(W * k)), Math.max(4, Math.round(H * k)));
+    blurCanvas(small, 2, 2);
+    upscaleTo(small, g, W, H);
+  }
+  return base;
+}
+function dilate(src, w, h, r) {
+  let a = Uint8Array.from(src), b = new Uint8Array(src.length);
+  for (let it = 0; it < r; it++) {
+    const full = (it % 2 === 1);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = y * w + x; let v = a[i];
+      if (!v) {
+        if ((x > 0 && a[i - 1]) || (x < w - 1 && a[i + 1]) || (y > 0 && a[i - w]) || (y < h - 1 && a[i + w])) v = 1;
+        else if (full && ((x > 0 && y > 0 && a[i - w - 1]) || (x < w - 1 && y > 0 && a[i - w + 1]) ||
+                          (x > 0 && y < h - 1 && a[i + w - 1]) || (x < w - 1 && y < h - 1 && a[i + w + 1]))) v = 1;
+      }
+      b[i] = v;
+    }
+    const t = a; a = b; b = t;
+  }
+  return a;
+}
+function makeMaskCanvas(ti) {
+  const { wm, hm, persons } = ST, n = wm * hm;
+  const T = persons[ti].mask, O = new Uint8Array(n);
+  persons.forEach((p, i) => { if (i !== ti) { const m = p.mask; for (let j = 0; j < n; j++) if (m[j]) O[j] = 1; } });
+  const r = Math.round(S.grow / 100 * WORK_EDGE);
+  const D = r > 0 ? dilate(T, wm, hm, r) : T;
+  const Od = dilate(O, wm, hm, Math.max(1, Math.round(r * 0.6)));   // 다른 사람 주변은 넉넉히 제외
+  const F = new Float32Array(n);
+  for (let j = 0; j < n; j++) F[j] = ((D[j] && !Od[j]) || (T[j] && !O[j])) ? 1 : 0;
+  blurPlane(F, wm, hm, Math.max(1, Math.round(r * 0.4)), 2);       // 경계를 부드럽게
+  for (let j = 0; j < n; j++) if (O[j] && !T[j]) F[j] = 0;          // 다른 사람 몸 안쪽은 반드시 가림
+  const mc = mk(wm, hm), g = mc.getContext('2d'), id = g.createImageData(wm, hm);
+  for (let j = 0; j < n; j++) id.data[j * 4 + 3] = Math.round(F[j] * 255);
+  g.putImageData(id, 0, 0);
+  return mc;
+}
+
+/* ---------- 합성 & 표시 ---------- */
+function render() {
+  const { src, base } = ST, W = src.width, H = src.height, view = $('view');
+  const mc = makeMaskCanvas(ST.target);
+  const tmp = mk(W, H), tg = tmp.getContext('2d');
+  tg.drawImage(src, 0, 0);
+  tg.globalCompositeOperation = 'destination-in';
+  tg.imageSmoothingEnabled = true; tg.imageSmoothingQuality = 'high';
+  tg.drawImage(mc, 0, 0, W, H);
+  if (view.width !== W || view.height !== H) { view.width = W; view.height = H; }
+  const vg = view.getContext('2d');
+  vg.globalCompositeOperation = 'source-over';
+  vg.drawImage(base, 0, 0);
+  vg.drawImage(tmp, 0, 0);
+  ST.blobP = new Promise(res => view.toBlob(res, 'image/jpeg', 0.92));
+  $('saveBtn').disabled = false;
+  const n = ST.persons.length;
+  const info = $('info'); info.className = '';
+  info.textContent = n > 1
+    ? `👥 ${n}명 감지 · 남길 아이를 화면에서 탭하면 바뀝니다. 확인 후 저장하세요.`
+    : '👤 1명 감지 · 이 아이만 남기고 주변은 가렸어요. 확인 후 저장하세요.';
+}
+function showNoPerson() {
+  ST.persons = []; ST.src = ST.base = null; ST.blobP = null;
+  $('resultBox').hidden = false;
+  const v = $('view'); v.width = 4; v.height = 3; v.getContext('2d').clearRect(0, 0, 4, 3);
+  v.style.display = 'none';
+  const info = $('info'); info.className = 'warn';
+  info.textContent = '사람을 찾지 못했어요. 아이가 더 크고 또렷하게 보이도록 다시 촬영해 주세요. (가려지지 않은 사진은 저장되지 않습니다)';
+  $('saveBtn').disabled = true;
+}
+
+/* ---------- 촬영/선택 처리 ---------- */
+let working = false;
+async function handleFile(file) {
+  if (!file || working) return;
+  working = true;
+  try {
+    // 이전 사진(원본 포함)을 먼저 지움
+    ST.src = ST.base = null; ST.persons = []; ST.blobP = null; $('saveBtn').disabled = true;
+    $('empty').hidden = true; $('view').style.display = '';
+    busy('사진을 불러오는 중…'); await tick();
+    const bmp = await loadBitmap(file);
+    const [bw, bh] = srcSize(bmp), sc = Math.min(1, MAX_EDGE / Math.max(bw, bh));
+    ST.src = downscale(bmp, Math.max(2, Math.round(bw * sc)), Math.max(2, Math.round(bh * sc)));
+    if (bmp.close) bmp.close();
+
+    busy(sessionP ? '아이를 찾는 중…' : '아이를 찾는 중…\n(처음 한 번은 AI를 불러오느라 조금 더 걸려요)'); await tick();
+    const r = await detectPersons(ST.src);
+    if (!r.persons.length) { busy(); showNoPerson(); return; }
+    ST.persons = r.persons; ST.wm = r.wm; ST.hm = r.hm;
+    ST.target = pickTarget(r.persons);
+
+    busy('나머지를 가리는 중…'); await tick();
+    ST.base = buildBase(ST.src);
+    $('resultBox').hidden = false;
+    render();
+    setStatus('✓ AI 준비 완료', 'ok');
+  } catch (e) {
+    console.error(e);
+    busy(); toast('처리 중 문제가 생겼어요. 다시 시도해 주세요.');
+    $('empty').hidden = !!ST.src;
+    setStatus('⚠ 오류: ' + String(e.message || e).slice(0, 20), 'bad');
+  } finally {
+    busy(); working = false;
+  }
+}
+$('cam').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; handleFile(f); });
+$('pick').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; handleFile(f); });
+
+/* ---------- 화면 탭 → 대상 아이 바꾸기 ---------- */
+$('view').addEventListener('click', ev => {
+  if (!ST.persons.length || working) return;
+  const r = $('view').getBoundingClientRect(), { wm, hm, persons } = ST;
+  const x = Math.floor((ev.clientX - r.left) / r.width * wm), y = Math.floor((ev.clientY - r.top) / r.height * hm);
+  let best = -1, ba = Infinity;
+  persons.forEach((p, i) => {
+    let hit = false;
+    for (let dy = -3; dy <= 3 && !hit; dy++) for (let dx = -3; dx <= 3; dx++) {
+      const xx = x + dx, yy = y + dy;
+      if (xx >= 0 && yy >= 0 && xx < wm && yy < hm && p.mask[yy * wm + xx]) { hit = true; break; }
+    }
+    if (hit && p.area < ba) { ba = p.area; best = i; }
+  });
+  if (best < 0) {
+    persons.forEach((p, i) => {
+      if (x >= p.bx1 && x <= p.bx2 && y >= p.by1 && y <= p.by2) {
+        const a = (p.bx2 - p.bx1) * (p.by2 - p.by1);
+        if (a < ba) { ba = a; best = i; }
+      }
+    });
+  }
+  if (best < 0) { toast('남기고 싶은 아이를 탭해 주세요'); return; }
+  if (best === ST.target) { toast('이미 선택된 아이예요'); return; }
+  ST.target = best; render(); toast('선택한 아이만 남겼어요');
+});
+
+/* ---------- 저장 ---------- */
+function stamp() {
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+}
+let fbUrl = null;
+function showFallback(blob) {
+  if (fbUrl) URL.revokeObjectURL(fbUrl);
+  fbUrl = URL.createObjectURL(blob); $('fbImg').src = fbUrl; $('fallback').hidden = false;
+}
+$('fbClose').addEventListener('click', () => { $('fallback').hidden = true; });
+$('saveBtn').addEventListener('click', async () => {
+  if (!ST.blobP) return;
+  const blob = await ST.blobP;
+  if (!blob) { toast('저장 파일을 만들지 못했어요'); return; }
+  const file = new File([blob], `원아사진_${stamp()}.jpg`, { type: 'image/jpeg' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file] }); toast('저장했다면 다른 아이도 탭해서 이어서 저장하세요'); return; }
+    catch (e) { if (e && e.name === 'AbortError') return; }
+  }
+  showFallback(blob);
+});
+
+/* ---------- 설정 UI ---------- */
+function syncSettings() {
+  document.querySelectorAll('.seg button').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode));
+  $('lv').value = S.level; $('lvv').textContent = S.level;
+  $('gr').value = S.grow;  $('grv').textContent = S.grow.toFixed(1) + '%';
+}
+let reTimer = 0;
+function reapply() {
+  saveSettings(); syncSettings();
+  if (!ST.src || !ST.persons.length) return;
+  clearTimeout(reTimer);
+  reTimer = setTimeout(() => { ST.base = buildBase(ST.src); render(); }, 120);
+}
+document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => { S.mode = b.dataset.mode; reapply(); }));
+$('lv').addEventListener('input', e => { S.level = +e.target.value; reapply(); });
+$('gr').addEventListener('input', e => { S.grow = +e.target.value; reapply(); });
+syncSettings();
+
+/* ---------- 시작 ---------- */
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+window.addEventListener('load', () => setTimeout(warmUp, 400));
+window.__kidcam = { ST, S, handleFile };   // 점검용
+</script>
+</body>
+</html>
