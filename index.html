@@ -90,7 +90,7 @@
 </head>
 <body>
 <header>
-  <h1>원아 사진 촬영 <small style="font-size:11px;color:var(--sub);font-weight:500">v4</small></h1>
+  <h1>원아 사진 촬영 <small style="font-size:11px;color:var(--sub);font-weight:500">v5</small></h1>
   <span id="status">AI 준비 중…</span>
 </header>
 
@@ -172,7 +172,7 @@ const $ = id => document.getElementById(id);
 const MAX_EDGE  = 2048;   // 저장 사진의 긴 변 최대 픽셀
 const WORK_EDGE = 768;    // 마스크 계산용 해상도(긴 변)
 const REFINE_EDGE = 1280; // 가장자리 다듬기 해상도(긴 변)
-const APP_VER = 'v4';
+const APP_VER = 'v5';
 const CONF = 0.30, IOU = 0.5, MAX_PERSONS = 12;
 const CELLS      = [64, 48, 36, 28, 20];   // 모자이크: 긴 변 칸 수 (강도 1~5)
 const BLUR_EDGE  = [110, 84, 64, 48, 34];  // 블러: 축소 해상도 (강도 1~5)
@@ -699,6 +699,7 @@ $('modal').addEventListener('click', e => { if (e.target === $('modal')) $('moda
 
 /* ---------- 시작 ---------- */
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch (e) {}   // 저장된 AI 파일이 임의로 지워지지 않도록 요청
 window.addEventListener('load', () => setTimeout(warmUp, 400));
 window.__kidcam = { ST, S, handleFile };   // 점검용
 </script>
