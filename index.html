@@ -90,7 +90,7 @@
 </head>
 <body>
 <header>
-  <h1>원아 사진 촬영 <small style="font-size:11px;color:var(--sub);font-weight:500">v3</small></h1>
+  <h1>원아 사진 촬영 <small style="font-size:11px;color:var(--sub);font-weight:500">v4</small></h1>
   <span id="status">AI 준비 중…</span>
 </header>
 
@@ -128,7 +128,7 @@
       <div class="row">
         <label>가림 강도 <b id="lvv"></b></label>
         <input type="range" id="lv" min="0" max="5" step="1">
-        <div class="hint">0은 가리지 않음, 높을수록 알아보기 어렵습니다. (기본 4)</div>
+        <div class="hint">0은 가리지 않음, 높을수록 알아보기 어렵습니다. (기본 2)</div>
       </div>
       <div class="row">
         <label>남길 아이 윤곽 여유 <b id="grv"></b></label>
@@ -172,15 +172,15 @@ const $ = id => document.getElementById(id);
 const MAX_EDGE  = 2048;   // 저장 사진의 긴 변 최대 픽셀
 const WORK_EDGE = 768;    // 마스크 계산용 해상도(긴 변)
 const REFINE_EDGE = 1280; // 가장자리 다듬기 해상도(긴 변)
-const APP_VER = 'v3';
+const APP_VER = 'v4';
 const CONF = 0.30, IOU = 0.5, MAX_PERSONS = 12;
 const CELLS      = [64, 48, 36, 28, 20];   // 모자이크: 긴 변 칸 수 (강도 1~5)
 const BLUR_EDGE  = [110, 84, 64, 48, 34];  // 블러: 축소 해상도 (강도 1~5)
 
 /* ---------- 설정 ---------- */
-const S = { mode: 'mosaic', level: 4, grow: 1.5 };
-try { Object.assign(S, JSON.parse(localStorage.getItem('kidcam-settings') || '{}')); } catch (e) {}
-function saveSettings() { try { localStorage.setItem('kidcam-settings', JSON.stringify(S)); } catch (e) {} }
+const S = { mode: 'mosaic', level: 2, grow: 7 };
+try { Object.assign(S, JSON.parse(localStorage.getItem('kidcam-settings2') || '{}')); } catch (e) {}
+function saveSettings() { try { localStorage.setItem('kidcam-settings2', JSON.stringify(S)); } catch (e) {} }
 
 /* ---------- 상태 ---------- */
 const ST = { src: null, base: null, persons: [], wm: 0, hm: 0, target: -1, blobP: null };
