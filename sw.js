@@ -1,6 +1,6 @@
 /* 오프라인에서도 쓰도록 앱 파일과 AI 모델을 폰에 저장해 두는 서비스워커.
-   앱을 수정해서 다시 올렸다면 아래 버전(v1)을 v2, v3…로 올려 주세요. */
-const CACHE = 'kidcam-v1';
+   앱을 수정해서 다시 올렸다면 아래 버전(v2)를 v3, v4…로 올려 주세요. */
+const CACHE = 'kidcam-v2';
 const CORE = [
   './', 'index.html', 'manifest.json',
   'icon-180.png', 'icon-192.png', 'icon-512.png',
