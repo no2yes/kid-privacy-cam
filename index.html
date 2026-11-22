@@ -143,7 +143,7 @@
 </head>
 <body>
 <header>
-  <h1>원아 사진 촬영 <small style="font-size:11px;color:var(--sub);font-weight:500">v8</small></h1>
+  <h1>원아 사진 촬영 <small style="font-size:11px;color:var(--sub);font-weight:500">v9</small></h1>
   <span id="status">AI 준비 중…</span>
 </header>
 
@@ -202,7 +202,7 @@
         <label>가리는 방식</label>
         <div class="seg">
           <button type="button" data-mode="mosaic">모자이크</button>
-          <button type="button" data-mode="blur">블러</button>
+          <button type="button" data-mode="blur">흐리게</button>
         </div>
       </div>
       <div class="row">
@@ -280,7 +280,7 @@ const $ = id => document.getElementById(id);
 const MAX_EDGE  = 2048;   // 저장 사진의 긴 변 최대 픽셀
 const WORK_EDGE = 768;    // 마스크 계산용 해상도(긴 변)
 const REFINE_EDGE = 1280; // 가장자리 다듬기 해상도(긴 변)
-const APP_VER = 'v8';
+const APP_VER = 'v9';
 const CONF = 0.30, IOU = 0.5, MAX_PERSONS = 12;
 const CELLS      = [64, 48, 36, 28, 20];   // 모자이크: 긴 변 칸 수 (강도 1~5)
 const BLUR_EDGE  = [110, 84, 64, 48, 34];  // 블러: 축소 해상도 (강도 1~5)
